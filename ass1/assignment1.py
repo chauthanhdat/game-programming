@@ -141,7 +141,7 @@ zombie_sprites = pygame.sprite.Group()
 zombie_pos = [(385,125),(601,125),(817,125),(385,341),(601,341),(817,341),(385,557),(601,557),(817,557)]
 pixeboy_font = pygame.font.Font('Pixeboy.ttf', 80)
 
-pygame.mixer.music.load('bg (1).wav')
+pygame.mixer.music.load('bg.wav')
 pygame.mixer.music.play(-1)
 
 while True:
