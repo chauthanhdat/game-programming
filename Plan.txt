@@ -4,4 +4,3 @@
 4. Board game + simple AI + android OS
 5. Networking game (simple tank 2D)
 6. 3D game (simple battlefield + simple tank model)
-
