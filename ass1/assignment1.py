@@ -212,15 +212,16 @@ def draw_text(text, dest):
     screen.blit(pixeboy_font.render(text, False, WHITE), dest)
 
 
-pygame.init()
-
 # Set up
+pygame.init()
+clock = pygame.time.Clock()
+
+# Main screen
 screen_w = 1280
 screen_h = 720
 size = (screen_w,screen_h)
 screen = pygame.display.set_mode(size)
 pixeboy_font = pygame.font.Font('data/Pixeboy.ttf', 80)
-clock = pygame.time.Clock()
 
 pygame.display.set_caption('Whack A Zombie')
 pygame.display.set_icon(pygame.image.load('data/icon.png'))
