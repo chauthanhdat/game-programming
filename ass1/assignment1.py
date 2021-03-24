@@ -96,10 +96,6 @@ class GameState():
         # </Drawing>
 
     def main_game(self):
-        if self.miss >= 10:
-            self.state = 'play_again'
-            return
-
         pygame.mouse.set_visible(False)
 
         current_time = pygame.time.get_ticks()
@@ -132,6 +128,10 @@ class GameState():
                 elif current_time - _.spawn_time >= ZOMBIE_LIFE_CYCLE:
                     _.isDie = True
                     self.miss += 1
+
+        if self.miss >= 10:
+            self.state = 'play_again'
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
