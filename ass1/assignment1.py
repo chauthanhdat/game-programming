@@ -10,6 +10,7 @@ import pygame.sprite
 import pygame.font
 import pygame.event
 import pygame.mixer
+import pygame.draw
 import random
 
 class Zombie(pygame.sprite.Sprite):
@@ -85,6 +86,8 @@ class GameState():
                 pygame.mixer.music.play(-1)
 
         # <Drawing>
+        screen.blit(self.bg_img, (0,0))
+
         ready_text = pixeboy_font.render('Ready ?', False, WHITE)
         text_rect = ready_text.get_rect(center=[screen_w/2, screen_h/2])
         screen.blit(ready_text, text_rect)
@@ -93,6 +96,10 @@ class GameState():
         # </Drawing>
 
     def main_game(self):
+        if self.miss >= 10:
+            self.state = 'play_again'
+            return
+
         pygame.mouse.set_visible(False)
 
         current_time = pygame.time.get_ticks()
@@ -125,9 +132,6 @@ class GameState():
                 elif current_time - _.spawn_time >= ZOMBIE_LIFE_CYCLE:
                     _.isDie = True
                     self.miss += 1
-                    if self.miss >= 10:
-                        self.state = 'play_again'
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
