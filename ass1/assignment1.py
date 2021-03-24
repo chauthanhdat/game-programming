@@ -1,4 +1,7 @@
+from os import terminal_size
+from typing import final
 import pygame, sys
+import pygame.constants
 import pygame.display
 import pygame.transform
 import pygame.image
@@ -7,32 +10,69 @@ import pygame.sprite
 import pygame.font
 import pygame.event
 import pygame.mixer
-
 import random
 
 class Axe():
     pass
 
 class Zombie(pygame.sprite.Sprite):
-    def __init__(self, pos):
+    def __init__(self, pos, idx):
         super().__init__()
-        self.image = pygame.image.load('zombie.png')
+        self.sprites = []
+        self.sprites.append(pygame.image.load('data/zombie_0.png'))
+        self.sprites.append(pygame.image.load('data/zombie_1.png'))
+        self.sprites.append(pygame.image.load('data/zombie_2.png'))
+        self.sprites.append(pygame.image.load('data/zombie_3.png'))
+        self.sprites.append(pygame.image.load('data/zombie_4.png'))
+        self.sprites.append(pygame.image.load('data/zombie_5.png'))
+        self.sprites.append(pygame.image.load('data/zombie_6.png'))
+        self.sprites.append(pygame.image.load('data/zombie_7.png'))
+        self.sprites.append(pygame.image.load('data/zombie_8.png'))
+        self.sprites.append(pygame.image.load('data/zombie_9.png'))
+        self.current_sprite = 0
+
+        self.index = idx
+        self.isDie = False
+        self.spawn_time = pygame.time.get_ticks()
+
+        self.image = self.sprites[self.current_sprite]
         self.rect = self.image.get_rect()
         self.rect.x = pos[0]
         self.rect.y = pos[1]
+    
+    def update(self):
+        if self.isDie:
+            if self.current_sprite > 0:
+                self.current_sprite -= 1
+                self.image = self.sprites[self.current_sprite]
+        else:
+            if self.current_sprite < len(self.sprites) - 1:
+                self.current_sprite += 1
+                self.image = self.sprites[self.current_sprite]
+
+class Hit(pygame.sprite.Sprite):
+    def __init__(self, pos):
+        super().__init__()
+        self.image = pygame.image.load('data/hit.png')
+        self.rect = self.image.get_rect()
+        self.rect.x = pos[0]
+        self.rect.y = pos[1]
+        self.spawn_time = pygame.time.get_ticks()
 
 class GameState():
     def __init__(self):
         self.state = 'intro'
-        self.past_time = 0
         self.score = 0
         self.miss = 0
-        self.bg = pygame.image.load('bg.png')
-        self.axe = pygame.image.load('axe.png')
-        self.explosion = pygame.transform.scale(pygame.image.load('explosion.png'),(100,100))
+        self.bg_img = pygame.image.load('data/bg.png')
+        self.axe_img = pygame.image.load('data/axe.png')
         self.zombie_idx = -1
-        self.whack = False  
-        self.whack_sound = pygame.mixer.Sound('whack.wav')
+        self.available_idx = [True,True,True,True,True,True,True,True,True]
+        self.haveHit = False
+        self.whack_sound = pygame.mixer.Sound('data/whack.wav')
+        self.hit_sound = pygame.mixer.Sound('data/kick.wav')
+        self.zombie_spawn_time = 3000
+        self.prev_zombie_spawn_time = 0
 
     def intro(self):
         for event in pygame.event.get():
@@ -41,35 +81,51 @@ class GameState():
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 self.state = 'main_game'
-                self.past_time = pygame.time.get_ticks()
+                self.prev_zombie_spawn_time = pygame.time.get_ticks()
 
-        
+        # <Drawing>
         ready_text = pixeboy_font.render('Ready ?', False, WHITE)
         text_rect = ready_text.get_rect(center=[screen_w/2, screen_h/2])
         screen.blit(ready_text, text_rect)
 
         pygame.display.flip()
+        # </Drawing>
 
     def main_game(self):
         pygame.mouse.set_visible(False)
 
         current_time = pygame.time.get_ticks()
+        past_time = current_time - self.prev_zombie_spawn_time
 
-        temp = current_time - self.past_time
-
-        if temp >= 1000:
-            self.whack = False
-            if zombie_sprites:
-                self.miss += 1
-            zombie_sprites.empty()
+        if past_time >= self.zombie_spawn_time:
+            if self.zombie_spawn_time > 500:
+                self.zombie_spawn_time -= 100
             
+            # Zombie khong xuat hien tai vi tri cu
             random_idx = random.randint(0,8)
-            while random_idx == self.zombie_idx:
+            while not self.available_idx[random_idx]:
                 random_idx = random.randint(0,8)
-            self.zombie_idx = random_idx
+            self.available_idx[random_idx] = False
+            zombie_sprites.add(Zombie(available_pos[random_idx], random_idx))
 
-            zombie_sprites.add(Zombie(zombie_pos[random_idx]))
-            self.past_time = current_time
+            self.prev_zombie_spawn_time = current_time
+
+        for _ in hit_sprites:
+            if type(_) is Hit:
+                if current_time - _.spawn_time >= HIT_LIFE_CYCLE:
+                    hit_sprites.remove(_)
+
+        for _ in zombie_sprites:
+            if type(_) is Zombie:
+                if _.isDie:
+                    if _.current_sprite == 0:
+                        self.available_idx[_.index] = True
+                        zombie_sprites.remove(_)
+                elif current_time - _.spawn_time >= ZOMBIE_LIFE_CYCLE:
+                    _.isDie = True
+                    self.miss += 1
+
+                
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -77,42 +133,39 @@ class GameState():
                 sys.exit()
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                self.whack_sound.play().set_volume(.1)
-                self.axe = pygame.transform.rotate(self.axe, -30)
+                self.whack_sound.play().set_volume(0.1)
+                self.axe_img = pygame.transform.rotate(self.axe_img, -30)
 
-                # xac dinh dap trung hay khong
+                # Check hit Zombie or not
                 click_pos = pygame.mouse.get_pos()
-                if click_pos[0] > zombie_pos[self.zombie_idx][0] and click_pos[0] < zombie_pos[self.zombie_idx][0] + 100:
-                    if click_pos[1] > zombie_pos[self.zombie_idx][1] and click_pos[1] < zombie_pos[self.zombie_idx][1] + 100:
-                        self.score += 1
-                        zombie_sprites.empty()
-                        self.whack = True
-
-                        pygame.mixer.Sound('kick.wav').play().set_volume(30.5)
+                for _ in zombie_sprites:
+                    if type(_) is Zombie:
+                        if _.rect.collidepoint(click_pos) and not _.isDie:
+                            _.isDie = True
+                            self.score += 1
+                            self.hit_sound.play()
+                            hit_sprites.add(Hit((_.rect.x, _.rect.y)))
 
             if event.type == pygame.MOUSEBUTTONUP:
-                self.axe = pygame.image.load('axe.png')
+                self.axe_img = pygame.image.load('data/axe.png')
 
-        # Drawing
-        screen.blit(self.bg, (0,0))
+        # <Drawing>
+        screen.blit(self.bg_img, (0,0))
+
         zombie_sprites.draw(screen)
-        if self.whack:
-            screen.blit(self.explosion, zombie_pos[self.zombie_idx])
+        zombie_sprites.update()
+        hit_sprites.draw(screen)
         
-        pos = pygame.mouse.get_pos()
-        screen.blit(self.axe, (pos[0] - 75, pos[1] - 35))
+        mouse_pos = pygame.mouse.get_pos()
+        screen.blit(self.axe_img, (mouse_pos[0] - 75, mouse_pos[1] - 35))
 
-
-        text = pixeboy_font.render("Score", False, (255,255,255))
-        screen.blit(text, (10,10))
-        text = pixeboy_font.render(": " + str(self.score), False, (255,255,255))
-        screen.blit(text, (200,10))
-        text = pixeboy_font.render("Miss", False, (255,255,255))
-        screen.blit(text, (10,70))
-        text = pixeboy_font.render(": " + str(self.miss), False, (255,255,255))
-        screen.blit(text, (200,70))
+        draw_text("Score", (10,10))
+        draw_text(": " + str(self.score), (200,10))
+        draw_text("Miss", (10,70))
+        draw_text(": " + str(self.miss), (200,70))
 
         pygame.display.flip()
+        # </Drawing>
 
     def state_manager(self):
         if self.state == 'intro':
@@ -120,31 +173,36 @@ class GameState():
         if self.state == 'main_game':
             self.main_game()
 
+def draw_text(text, dest):
+    screen.blit(pixeboy_font.render(text, False, WHITE), dest)
+
 pygame.init()
 
-#Screen
+# Set up
 screen_w = 1280
 screen_h = 720
 size = (screen_w,screen_h)
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption('Whack A Zombie')
-pygame.display.set_icon(pygame.image.load('icon.png'))
-
+pygame.display.set_icon(pygame.image.load('data/icon.png'))
 clock = pygame.time.Clock()
 
-# Color
+ZOMBIE_LIFE_CYCLE = 3000
+HIT_LIFE_CYCLE = 300
+
+# Define Color
 WHITE = (255,255,255)
 BLACK = (0,0,0)
 
 game_state = GameState()
 zombie_sprites = pygame.sprite.Group()
-zombie_pos = [(385,125),(601,125),(817,125),(385,341),(601,341),(817,341),(385,557),(601,557),(817,557)]
-pixeboy_font = pygame.font.Font('Pixeboy.ttf', 80)
+hit_sprites = pygame.sprite.Group()
+available_pos = [(385,125),(601,125),(817,125),(385,341),(601,341),(817,341),(385,557),(601,557),(817,557)]
+pixeboy_font = pygame.font.Font('data/Pixeboy.ttf', 80)
 
-pygame.mixer.music.load('bg.wav')
+pygame.mixer.music.load('data/bg.wav')
 pygame.mixer.music.play(-1)
 
 while True:
     game_state.state_manager()
     clock.tick(60)
-    
