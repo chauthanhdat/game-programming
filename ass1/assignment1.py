@@ -68,7 +68,6 @@ class GameState():
         self.axe_img = pygame.image.load('data/axe.png')
         self.zombie_idx = -1
         self.available_idx = [True,True,True,True,True,True,True,True,True]
-        self.haveHit = False
         self.whack_sound = pygame.mixer.Sound('data/whack.wav')
         self.hit_sound = pygame.mixer.Sound('data/kick.wav')
         self.zombie_spawn_time = 3000
@@ -81,7 +80,7 @@ class GameState():
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 self.state = 'main_game'
-                self.prev_zombie_spawn_time = pygame.time.get_ticks()
+                self.prev_zombie_spawn_time += pygame.time.get_ticks()
 
         # <Drawing>
         ready_text = pixeboy_font.render('Ready ?', False, WHITE)
@@ -124,8 +123,6 @@ class GameState():
                 elif current_time - _.spawn_time >= ZOMBIE_LIFE_CYCLE:
                     _.isDie = True
                     self.miss += 1
-
-                
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
