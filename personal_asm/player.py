@@ -21,15 +21,27 @@ class Player(pygame.sprite.Sprite):
         self.idle_sprites.append(pygame.image.load('player_idle_8.png'))
         self.idle_sprites.append(pygame.image.load('player_idle_9.png'))
         self.idle_sprites.append(pygame.image.load('player_idle_10.png'))
+        self.idle = 0
+
+        self.run_sprites = []
+        self.run_sprites.append(pygame.image.load('player_run_0.png'))
+        self.run_sprites.append(pygame.image.load('player_run_1.png'))
+        self.run_sprites.append(pygame.image.load('player_run_2.png'))
+        self.run_sprites.append(pygame.image.load('player_run_3.png'))
+        self.run_sprites.append(pygame.image.load('player_run_4.png'))
+        self.run_sprites.append(pygame.image.load('player_run_5.png'))
+        self.run_sprites.append(pygame.image.load('player_run_6.png'))
+        self.run_sprites.append(pygame.image.load('player_run_7.png'))
+        self.run_sprites.append(pygame.image.load('player_run_8.png'))
+        self.run_sprites.append(pygame.image.load('player_run_9.png'))
+        self.run_sprites.append(pygame.image.load('player_run_10.png'))
+        self.run_sprites.append(pygame.image.load('player_run_11.png'))
+        self.run = 0
 
         self.image = pygame.image.load('player_fall.png')
-        self.rect = pygame.Rect(96,96,96,96)
-        print(self.image.get_rect())
-        # self.rect.x = 100
-        # self.rect.y = 100
+        self.rect = pygame.Rect(32*1, 32*7,32,32)
 
-        self.state = 'idle'
-        self.idle = 0
+        self.state = 'fall'
         
         self.isDoubleJump = False
         self.jumpCount = JUMP_COUNT
@@ -37,19 +49,40 @@ class Player(pygame.sprite.Sprite):
         self.jumping = False
         self.running = False
         self.falling = True
-        self.lefting = True # can move left or not
-        self.righting = True # can move right or not
+
+        self.flip = False
 
     def update(self):
         if self.state == 'idle':
             if self.idle < len(self.idle_sprites) - 1:
                 self.idle += 1
-                self.image = self.idle_sprites[self.idle]
             else:
                 self.idle = 0
+
+            if self.flip:
+                self.image = pygame.transform.flip(self.idle_sprites[self.idle], True, False)
+            else:
+                self.image = self.idle_sprites[self.idle]
+
         elif self.state == 'fall':
-            self.image = pygame.image.load('player_fall.png')
+            if self.flip:
+                self.image = pygame.transform.flip(pygame.image.load('player_fall.png'), True, False)
+            else:
+                self.image = pygame.image.load('player_fall.png')
+
         elif self.state == 'jump':
-            self.image = pygame.image.load('player_jump.png')
+            if self.flip:
+                self.image = pygame.transform.flip(pygame.image.load('player_jump.png'), True, False)
+            else:
+                self.image = pygame.image.load('player_jump.png')
+
         elif self.state == 'run':
-            pass
+            if self.run < len(self.run_sprites) - 1:
+                self.run += 1
+            else:
+                self.run = 0
+                
+            if self.flip:
+                self.image = pygame.transform.flip(self.run_sprites[self.run], True, False)
+            else:
+                self.image = self.run_sprites[self.run]
