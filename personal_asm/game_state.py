@@ -1,3 +1,4 @@
+from trap import Trap
 from kiwi import Kiwi
 from os import terminal_size
 import sys
@@ -36,11 +37,11 @@ class GameState:
         self.player_mask = pygame.mask.from_surface(pygame.image.load('player_mask.png'))
 
         self.kiwi = pygame.sprite.Group()
-        self.kiwi.add(Kiwi(32*3, 32*2))
-        self.kiwi.add(Kiwi(32*4, 32*2))
-        self.kiwi.add(Kiwi(32*5, 32*2))
+        self.trap = pygame.sprite.Group()
+        self.reset_level_1()
 
         self.player_jump_sound = pygame.mixer.Sound('jump.wav')
+        self.player_collect_kiwi_sound = pygame.mixer.Sound('collect.wav')
 
         pygame.mixer.music.load('menu.wav')
         pygame.mixer.music.play(-1)
@@ -66,9 +67,11 @@ class GameState:
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if btn_new.rect.x <= mouse_pos[0] <= btn_new.rect.x + btn_new.rect.width and btn_new.rect.y <= mouse_pos[1] <= btn_new.rect.y + btn_new.rect.height:
-                    self.state = 'main_game'
+                    self.state = 'level_1'
+
                     pygame.mixer.music.load('theme.wav')
                     pygame.mixer.music.play(-1)
+
                 elif btn_exit.rect.x <= mouse_pos[0] <= btn_exit.rect.x + btn_exit.rect.width and btn_exit.rect.y <= mouse_pos[1] <= btn_exit.rect.y + btn_exit.rect.height:
                     pygame.quit()
                     sys.exit()
@@ -94,7 +97,7 @@ class GameState:
         self.screen.blit(btn_option.image, (btn_option.rect.x, btn_option.rect.y))
         self.screen.blit(btn_exit.image, (btn_exit.rect.x, btn_exit.rect.y))
 
-    def main_game(self):
+    def level_1(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -142,6 +145,21 @@ class GameState:
                     self.player.righting = False
                     while self.checkCollision():
                         self.player.rect.x -= 1
+
+        if pygame.sprite.spritecollide(self.player, self.kiwi, True):
+            self.player_collect_kiwi_sound.play().set_volume(2)
+
+        if pygame.sprite.spritecollideany(self.player, self.trap):
+            self.reset_level_1()
+            pass
+
+        print(len(self.kiwi))
+
+        if len(self.kiwi) == 0:
+            self.reset_level_1()
+            pygame.mixer.music.load('menu.wav')
+            pygame.mixer.music.play(-1)
+            self.state = 'main_menu'
         
         # jump
         if self.player.jumping:
@@ -183,9 +201,22 @@ class GameState:
         self.screen.blit(self.player.image, (self.player.rect.x, self.player.rect.y))
         self.kiwi.update()
         self.kiwi.draw(self.screen)
+        self.trap.draw(self.screen)
         pygame.display.flip()
 
         # print(self.player.state)
+
+    def reset_level_1(self):
+        self.kiwi.empty()
+        self.kiwi.add(Kiwi(32*10, 32*3))
+        self.kiwi.add(Kiwi(32*13, 32*3))
+        self.kiwi.add(Kiwi(32*7, 32*3))
+        self.kiwi.add(Kiwi(32*4, 32*3))
+        for i in range(8,28):
+            self.trap.add(Trap(16*i, 16*17))
+        self.player.rect.x = 32*1
+        self.player.rect.y = 32*7
+        print('reset')
 
     def pause_menu(self):
         for event in pygame.event.get():
@@ -193,10 +224,20 @@ class GameState:
                 pygame.quit()
                 sys.exit()
 
+    def level_2(self):
+        pass
+
+    def level_select(self):
+        pass
+
     def state_manger(self):
         if self.state == 'main_menu':
             self.main_menu()
-        if self.state == 'main_game':
-            self.main_game()
+        if self.state == 'level_select':
+            self.level_select()
+        if self.state == 'level_1':
+            self.level_1()
+        if self.state == 'level_2':
+            self.level_2()
         if self.state == 'pause_menu':
             self.pause_menu()
