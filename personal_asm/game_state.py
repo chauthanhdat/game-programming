@@ -1,12 +1,6 @@
-from trap import Trap
-from kiwi import Kiwi
-from os import terminal_size
 import sys
-from tiles import TileMap
 import pygame
-from pygame import key
-from pygame import scrap
-from pygame.constants import FULLSCREEN, KEYDOWN, K_DOWN, K_LEFT, K_RIGHT, K_SPACE, K_UP, RESIZABLE
+
 import pygame.event
 import pygame.sprite
 import pygame.display
@@ -16,34 +10,36 @@ import pygame.draw
 import pygame.transform
 import pygame.mouse
 import pygame.mixer
+import pygame.key
+from pygame.constants import FULLSCREEN, KEYDOWN, K_DOWN, K_LEFT, K_RIGHT, K_SPACE, K_UP, RESIZABLE
 
 from setting import *
 from player import Player
 from button import Button
+from trap import Trap
+from kiwi import Kiwi
+from tiles import TileMap
 
 class GameState:
     def __init__(self) -> None:
         self.state = 'main_menu'
 
-        self.screen_w = WIDTH
-        self.screen_h = HEIGHT
-        self.screen_size = (self.screen_w, self.screen_h)
-        self.screen = pygame.display.set_mode(self.screen_size)
+        self.screen = pygame.display.set_mode([WIDTH, HEIGHT])
 
-        self.map = pygame.transform.scale(pygame.image.load('map.png'), [WIDTH,HEIGHT])
+        self.map = pygame.transform.scale(pygame.image.load('images/map.png'), [WIDTH,HEIGHT])
         self.map_mask = pygame.mask.from_surface(self.map)
 
         self.player = Player()
-        self.player_mask = pygame.mask.from_surface(pygame.image.load('player_mask.png'))
+        self.player_mask = pygame.mask.from_surface(pygame.image.load('images/player_mask.png'))
 
         self.kiwi = pygame.sprite.Group()
         self.trap = pygame.sprite.Group()
         self.reset_level_1()
 
-        self.player_jump_sound = pygame.mixer.Sound('jump.wav')
-        self.player_collect_kiwi_sound = pygame.mixer.Sound('collect.wav')
+        self.player_jump_sound = pygame.mixer.Sound('sounds/jump.wav')
+        self.player_collect_kiwi_sound = pygame.mixer.Sound('sounds/collect.wav')
 
-        pygame.mixer.music.load('menu.wav')
+        pygame.mixer.music.load('sounds/menu.wav')
         pygame.mixer.music.play(-1)
 
         m_test = TileMap()
@@ -55,10 +51,10 @@ class GameState:
         return collision
 
     def main_menu(self):
-        title = pygame.image.load('title.png')
-        btn_new = Button('btn_new_game.png',6)
-        btn_option = Button('btn_option.png',7)
-        btn_exit = Button('btn_exit.png',8)
+        title = pygame.image.load('images/title.png')
+        btn_new = Button('images/btn_new_game.png',6)
+        btn_option = Button('images/btn_option.png',7)
+        btn_exit = Button('images/btn_exit.png',8)
 
         mouse_pos = pygame.mouse.get_pos()
         for event in pygame.event.get():
@@ -69,7 +65,7 @@ class GameState:
                 if btn_new.rect.x <= mouse_pos[0] <= btn_new.rect.x + btn_new.rect.width and btn_new.rect.y <= mouse_pos[1] <= btn_new.rect.y + btn_new.rect.height:
                     self.state = 'level_1'
 
-                    pygame.mixer.music.load('theme.wav')
+                    pygame.mixer.music.load('sounds/theme.wav')
                     pygame.mixer.music.play(-1)
 
                 elif btn_exit.rect.x <= mouse_pos[0] <= btn_exit.rect.x + btn_exit.rect.width and btn_exit.rect.y <= mouse_pos[1] <= btn_exit.rect.y + btn_exit.rect.height:
@@ -91,7 +87,7 @@ class GameState:
         else:
             btn_exit.image = pygame.transform.scale(btn_exit.image, [btn_exit.rect.width, btn_exit.rect.height])
 
-        self.screen.blit(pygame.image.load('bg.png'), (0,0))
+        self.screen.blit(pygame.image.load('images/bg.png'), (0,0))
         self.screen.blit(title, (WIDTH/2-title.get_width()/2, 48))
         self.screen.blit(btn_new.image, (btn_new.rect.x, btn_new.rect.y))
         self.screen.blit(btn_option.image, (btn_option.rect.x, btn_option.rect.y))
@@ -157,7 +153,7 @@ class GameState:
 
         if len(self.kiwi) == 0:
             self.reset_level_1()
-            pygame.mixer.music.load('menu.wav')
+            pygame.mixer.music.load('sounds/menu.wav')
             pygame.mixer.music.play(-1)
             self.state = 'main_menu'
         
@@ -195,7 +191,7 @@ class GameState:
             # self.player.standing = False # can jump while fall
         # /gravity
 
-        self.screen.blit(pygame.image.load('bg.png'), (0,0))
+        self.screen.blit(pygame.image.load('images/bg.png'), (0,0))
         self.screen.blit(self.map, (0,0)) # ground, wall
         self.player.update()
         self.screen.blit(self.player.image, (self.player.rect.x, self.player.rect.y))

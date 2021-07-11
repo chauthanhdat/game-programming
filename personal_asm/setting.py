@@ -1,6 +1,6 @@
 TITLE = "Adventure"
 TILE_SIZE = 32
-WIDTH = 480 # 15 tiles
+WIDTH = 480 # 15 tiles x 4
 HEIGHT = 320 # 10 tiles
 FPS = 60
 VELOCITY = 4

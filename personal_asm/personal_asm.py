@@ -9,6 +9,7 @@ from game_state import GameState
 pygame.init()
 clock = pygame.time.Clock()
 
+
 pygame.display.set_caption(setting.TITLE)
 
 game_state = GameState()
