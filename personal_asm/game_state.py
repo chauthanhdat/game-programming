@@ -1,4 +1,6 @@
+from map import Map
 import sys
+import csv
 import pygame
 
 import pygame.event
@@ -11,22 +13,21 @@ import pygame.transform
 import pygame.mouse
 import pygame.mixer
 import pygame.key
-from pygame.constants import FULLSCREEN, KEYDOWN, K_DOWN, K_LEFT, K_RIGHT, K_SPACE, K_UP, RESIZABLE
+# from pygame.constants import FULLSCREEN, KEYDOWN, K_DOWN, K_LEFT, K_RIGHT, K_SPACE, K_UP, RESIZABLE
 
 from setting import *
 from player import Player
 from button import Button
 from trap import Trap
 from kiwi import Kiwi
-from tiles import TileMap
 
 class GameState:
     def __init__(self) -> None:
         self.state = 'main_menu'
 
-        self.screen = pygame.display.set_mode([WIDTH, HEIGHT])
+        self.screen = pygame.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT])
 
-        self.map = pygame.transform.scale(pygame.image.load('images/map.png'), [WIDTH,HEIGHT])
+        self.map = pygame.transform.scale(pygame.image.load('images/map.png'), [SCREEN_WIDTH*4,SCREEN_HEIGHT])
         self.map_mask = pygame.mask.from_surface(self.map)
 
         self.player = Player()
@@ -39,11 +40,27 @@ class GameState:
         self.player_jump_sound = pygame.mixer.Sound('sounds/jump.wav')
         self.player_collect_kiwi_sound = pygame.mixer.Sound('sounds/collect.wav')
 
-        pygame.mixer.music.load('sounds/menu.wav')
-        pygame.mixer.music.play(-1)
+        # pygame.mixer.music.load('sounds/menu.wav')
+        # pygame.mixer.music.play(-1)
 
-        m_test = TileMap()
-        m_test.read_csv()
+        self.scroll_left = False
+        self.scroll_right = False
+        self.scroll = 0
+        self.scroll_speed = 1
+
+        self.map_data = []
+        for row in range(ROWS):
+            r = [-1] * MAX_COLS
+            self.map_data.append(r)
+        
+        with open('map.csv', newline='') as csvfile:
+            reader = csv.reader(csvfile, delimiter=',')
+            for x, row in enumerate(reader):
+                for y, tile in enumerate(row):
+                    self.map_data[x][y] = int(tile)
+
+        self.world = Map()   
+        self.world.process_data(self.map_data)
 
     def checkCollision(self):
         offset = (self.player.rect.x - self.map.get_rect().x, self.player.rect.y - self.map.get_rect().y)
@@ -65,8 +82,8 @@ class GameState:
                 if btn_new.rect.x <= mouse_pos[0] <= btn_new.rect.x + btn_new.rect.width and btn_new.rect.y <= mouse_pos[1] <= btn_new.rect.y + btn_new.rect.height:
                     self.state = 'level_1'
 
-                    pygame.mixer.music.load('sounds/theme.wav')
-                    pygame.mixer.music.play(-1)
+                    # pygame.mixer.music.load('sounds/theme.wav')
+                    # pygame.mixer.music.play(-1)
 
                 elif btn_exit.rect.x <= mouse_pos[0] <= btn_exit.rect.x + btn_exit.rect.width and btn_exit.rect.y <= mouse_pos[1] <= btn_exit.rect.y + btn_exit.rect.height:
                     pygame.quit()
@@ -88,7 +105,7 @@ class GameState:
             btn_exit.image = pygame.transform.scale(btn_exit.image, [btn_exit.rect.width, btn_exit.rect.height])
 
         self.screen.blit(pygame.image.load('images/bg.png'), (0,0))
-        self.screen.blit(title, (WIDTH/2-title.get_width()/2, 48))
+        self.screen.blit(title, (SCREEN_WIDTH / 2 - title.get_width() / 2, 48))
         self.screen.blit(btn_new.image, (btn_new.rect.x, btn_new.rect.y))
         self.screen.blit(btn_option.image, (btn_option.rect.x, btn_option.rect.y))
         self.screen.blit(btn_exit.image, (btn_exit.rect.x, btn_exit.rect.y))
@@ -104,19 +121,31 @@ class GameState:
                 if event.key == pygame.K_SPACE:
                     self.player.lefting = True
                     self.player.righting = True
-
                     if self.player.standing:
                         self.player.state = 'jump'
                         self.player.standing = False
                         self.player.jumping = True
-                        self.player_jump_sound.play()
+                        # self.player_jump_sound.play()
+
+                if event.key == pygame.K_LEFT:
+                    self.scroll_left = True
+                if event.key == pygame.K_RIGHT:
+                    self.scroll_right = True
+                if event.key == pygame.K_RSHIFT:
+                    self.scroll_speed = 5
 
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
                     self.player.running = False
+                if event.key == pygame.K_LEFT:
+                    self.scroll_left = False
+                if event.key == pygame.K_RIGHT:
+                    self.scroll_right = False
+                if event.key == pygame.K_RSHIFT:
+                    self.scroll_speed = 1
 
-        keys = key.get_pressed()
-        if keys[K_LEFT]:
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
             if self.player.standing:
                 self.player.running = True
                 self.player.state = 'run'
@@ -129,7 +158,7 @@ class GameState:
                     while self.checkCollision():
                         self.player.rect.x += 1
 
-        if keys[K_RIGHT]:
+        if keys[pygame.K_RIGHT]:
             if self.player.standing:
                 self.player.running = True
                 self.player.state = 'run'
@@ -143,19 +172,23 @@ class GameState:
                         self.player.rect.x -= 1
 
         if pygame.sprite.spritecollide(self.player, self.kiwi, True):
-            self.player_collect_kiwi_sound.play().set_volume(2)
+            # self.player_collect_kiwi_sound.play().set_volume(2)
+            pass
 
         if pygame.sprite.spritecollideany(self.player, self.trap):
             self.reset_level_1()
-            pass
 
-        print(len(self.kiwi))
+        # print(len(self.kiwi))
 
         if len(self.kiwi) == 0:
             self.reset_level_1()
-            pygame.mixer.music.load('sounds/menu.wav')
-            pygame.mixer.music.play(-1)
             self.state = 'main_menu'
+
+        # scroll the map
+        if self.scroll_left == True and self.scroll > 0:
+            self.scroll -= 5 * self.scroll_speed
+        if self.scroll_right == True:
+            self.scroll += 5 * self.scroll_speed
         
         # jump
         if self.player.jumping:
@@ -191,14 +224,17 @@ class GameState:
             # self.player.standing = False # can jump while fall
         # /gravity
 
-        self.screen.blit(pygame.image.load('images/bg.png'), (0,0))
-        self.screen.blit(self.map, (0,0)) # ground, wall
+        self.screen.blit(pygame.image.load('images/bg.png'), [-self.scroll, 0])
+        # self.screen.blit(self.map, [-self.scroll, 0]) # ground, wall
+        self.screen.blit(self.map, [0, 0]) # ground, wall
         self.player.update()
-        self.screen.blit(self.player.image, (self.player.rect.x, self.player.rect.y))
+        self.screen.blit(self.player.image, [self.player.rect.x, self.player.rect.y])
         self.kiwi.update()
         self.kiwi.draw(self.screen)
         self.trap.draw(self.screen)
-        pygame.display.flip()
+
+        self.world.draw(self.screen)
+        self.draw_grid()
 
         # print(self.player.state)
 
@@ -212,6 +248,10 @@ class GameState:
             self.trap.add(Trap(16*i, 16*17))
         self.player.rect.x = 32*1
         self.player.rect.y = 32*7
+
+        # pygame.mixer.music.load('sounds/menu.wav')
+        # pygame.mixer.music.play(-1)
+
         print('reset')
 
     def pause_menu(self):
@@ -237,3 +277,11 @@ class GameState:
             self.level_2()
         if self.state == 'pause_menu':
             self.pause_menu()
+
+    def draw_grid(self):
+        # vertical line
+        for c in range(MAX_COLS + 1):
+            pygame.draw.line(self.screen, (255,255,255), (c * TILE_SIZE - self.scroll, 0), (c * TILE_SIZE - self.scroll, SCREEN_HEIGHT))
+        # horizontal lines
+        for r in range(ROWS + 1):
+            pygame.draw.line(self.screen, (255,255,255), (0, r * TILE_SIZE), (SCREEN_WIDTH, r * TILE_SIZE))

@@ -7,14 +7,13 @@ from game_state import GameState
 
 # Set up
 pygame.init()
-clock = pygame.time.Clock()
-
-
 pygame.display.set_caption(setting.TITLE)
 
+clock = pygame.time.Clock()
 game_state = GameState()
 
-while True:
+run = True
+while run:
     game_state.state_manger()
     pygame.display.flip()
     clock.tick(setting.FPS)

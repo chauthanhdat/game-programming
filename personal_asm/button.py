@@ -9,7 +9,7 @@ class Button(pygame.sprite.Sprite):
         super().__init__()
         self.image = pygame.image.load(file_name)
         self.rect = self.image.get_rect()
-        self.rect.x = WIDTH/2 - self.rect.width/2
+        self.rect.x = SCREEN_WIDTH/2 - self.rect.width/2
         self.rect.y = 32 * y
 
 # class Button(pygame.sprite.Sprite):
